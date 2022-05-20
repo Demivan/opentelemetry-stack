@@ -1,0 +1,52 @@
+version: '3.4'
+
+services:
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    ports:
+      - 3000:3000
+
+  prometheus:
+    image: prom/prometheus:latest
+    command: [ "--config.file=/etc/prometheus.yaml" ]
+    volumes:
+      - ./prometheus/prometheus.yaml:/etc/prometheus.yaml
+    ports:
+      - "9090"
+
+  tempo:
+    image: grafana/tempo:latest
+    command: [ "-search.enabled=true", "-config.file=/etc/tempo.yaml" ]
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo.yaml
+      - ./tempo/overrides.yaml:/etc/overrides.yaml
+      - ./tempo/data/:/tmp/tempo
+    ports:
+      - 3200
+      - 4317 # oltp grpc
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - 3100
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki/loki.yaml:/etc/loki/local-config.yaml
+      - ./loki/data:/tmp/loki
+      - ./loki/wal:/tmp/wal
+
+  collector:
+    image: otel/opentelemetry-collector-contrib:0.51.0
+    command: '--config /etc/otel-config.yaml'
+    volumes:
+      - ./otel/otel-config.yaml:/etc/otel-config.yaml
+    ports:
+      - 4317:4317
+      - 8889
