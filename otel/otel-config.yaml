@@ -3,8 +3,57 @@ receivers:
     protocols:
       grpc:
 
+  # Dummy receiver that's never used, because a pipeline is required to have one.
+  otlp/spanmetrics:
+    protocols:
+      grpc:
+        endpoint: "localhost:12345"
+
 processors:
   batch:
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 4000
+    spike_limit_mib: 500
+  spanmetrics:
+    metrics_exporter: prometheusremotewrite
+    dimensions:
+      - name: http.method
+        default: GET
+      - name: http.status_code
+      - name: host.name
+      - name: deployment.environment
+  resource:
+    attributes:
+      - key: service_name
+        from_attribute: "service.name"
+        action: insert
+      - key: "service.name"
+        action: delete
+      - key: host_name
+        from_attribute: "host.name"
+        action: insert
+      - key: "host.name"
+        action: delete
+      - key: deployment_environment
+        from_attribute: "deployment.environment"
+        action: insert
+      - key: "deployment.environment"
+        action: delete
+  attributes/logs:
+    actions:
+      - key: RequestId
+        action: delete
+      - key: ConnectionId
+        action: delete
+      - key: MachineName
+        action: delete
+      - key: SourceContext
+        action: delete
+      - key: severityN
+        action: delete
+      - key: "{OriginalFormat}"
+        action: delete
 
 exporters:
   otlp:
@@ -15,28 +64,40 @@ exporters:
     endpoint: http://loki:3100/loki/api/v1/push
     labels:
       resource:
-        deployment.environment: "environment"
-        host.name: "hostname"
-        service.name: "service"
+        deployment_environment: "deployment_environment"
+        host_name: "host_name"
+        service_name: "service_name"
       record:
         severity: "severity"
+    format: "json"
     tls:
       insecure: true
-  prometheus:
-    endpoint: localhost:8889
+  prometheusremotewrite:
+    endpoint: "http://prometheus:9090/api/v1/write"
+    tls:
+      insecure: true
   logging:
     logLevel: debug
+  logging/error:
+    logLevel: error
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
-      exporters: [logging, otlp]
+      processors: [memory_limiter, spanmetrics, batch]
+      exporters: [otlp]
+
     logs:
       receivers: [otlp]
-      processors: [batch]
+      processors: [memory_limiter, resource, attributes/logs, batch]
       exporters: [loki]
     metrics:
       receivers: [otlp]
-      exporters: [prometheus]
+      processors: [memory_limiter, resource]
+      exporters: [prometheusremotewrite]
+
+    metrics/spanmetrics:
+      receivers: [otlp/spanmetrics]
+      processors: [memory_limiter]
+      exporters: [prometheusremotewrite]

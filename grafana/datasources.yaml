@@ -9,7 +9,11 @@ datasources:
   basicAuth: false
   isDefault: false
   version: 1
-  editable: false
+  jsonData:
+    httpMethod: POST
+    exemplarTraceIdDestinations:
+      - datasourceUid: tempo
+        name: trace_id
 
 - name: Tempo
   type: tempo
@@ -19,7 +23,6 @@ datasources:
   basicAuth: false
   isDefault: false
   version: 1
-  editable: false
   apiVersion: 1
   uid: tempo
 
@@ -31,12 +34,11 @@ datasources:
   basicAuth: false
   isDefault: true
   version: 1
-  editable: false
   apiVersion: 1
   uid: loki
   jsonData:
     derivedFields:
       - datasourceUid: tempo
-        matcherRegex: traceID=(\w+)
-        name: traceID
+        matcherRegex: \"traceid\":\s*\"(\w+)\"
+        name: traceid
         url: $${__value.raw}
