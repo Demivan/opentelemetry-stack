@@ -8,6 +8,7 @@ datasources:
   url: http://prometheus:9090
   basicAuth: false
   isDefault: false
+  editable: true
   version: 1
   jsonData:
     httpMethod: POST
@@ -22,6 +23,7 @@ datasources:
   url: http://tempo:3200
   basicAuth: false
   isDefault: false
+  editable: true
   version: 1
   apiVersion: 1
   uid: tempo
@@ -33,6 +35,7 @@ datasources:
   url: http://loki:3100
   basicAuth: false
   isDefault: true
+  editable: true
   version: 1
   apiVersion: 1
   uid: loki
