@@ -1,3 +1,6 @@
 loki/data
 loki/wal
 tempo/data
+grafana/data
+mimir/data
+

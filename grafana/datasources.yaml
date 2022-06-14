@@ -5,7 +5,7 @@ datasources:
   type: prometheus
   access: proxy
   orgId: 1
-  url: http://prometheus:9090
+  url: http://mimir:9009/prometheus
   basicAuth: false
   isDefault: false
   editable: true

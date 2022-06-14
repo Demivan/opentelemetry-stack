@@ -6,7 +6,7 @@ services:
     volumes:
       - ./grafana/grafana.ini:/etc/grafana/grafana.ini
       - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
-      - ./grafana/data:/var/lib/grafana
+      - grafana-storage:/var/lib/grafana
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
@@ -14,20 +14,21 @@ services:
     ports:
       - 3000:3000
 
-  prometheus:
-    image: prom/prometheus:latest
+  mimir:
+    image: grafana/mimir:latest
     command:
-      - --config.file=/etc/prometheus.yaml
-      - --web.enable-remote-write-receiver 
-      - --enable-feature=exemplar-storage
+      - --config.file=/etc/mimir/config.yaml
     volumes:
-      - ./prometheus/prometheus.yaml:/etc/prometheus.yaml
+      - ./mimir/data:/tmp/mimir
+      - ./mimir/config.yaml:/etc/mimir/config.yaml
     ports:
-      - "9090"
+      - 9009
 
   tempo:
     image: grafana/tempo:latest
-    command: [ "-search.enabled=true", "-config.file=/etc/tempo.yaml" ]
+    command:
+      - -search.enabled=true
+      - -config.file=/etc/tempo.yaml
     volumes:
       - ./tempo/tempo.yaml:/etc/tempo.yaml
       - ./tempo/overrides.yaml:/etc/overrides.yaml
@@ -54,3 +55,6 @@ services:
     ports:
       - 4317:4317
       - 8889
+
+volumes:
+  grafana-storage:
